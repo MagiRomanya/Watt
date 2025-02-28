@@ -49,3 +49,4 @@ target_include_directories(Watt INTERFACE
 ############### TESTS ################
 ######################################
 add_subdirectory(Spring)
+add_subdirectory(DeformationGradient)
