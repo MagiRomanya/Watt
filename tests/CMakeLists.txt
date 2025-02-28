@@ -42,7 +42,7 @@ add_library(Watt INTERFACE)
 target_include_directories(Watt INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/../     # Include current directory for your headers
     ${Eigen3_SOURCE_DIR}             # Eigen headers from FetchContent
-    ${TinyAD_SOURCE_DIR}            # TinyAD headers from FetchContent
+    ${TinyAD_SOURCE_DIR}/include/            # TinyAD headers from FetchContent
 )
 
 ######################################
