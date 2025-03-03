@@ -10,7 +10,7 @@ namespace Watt::Spring
  *
  * The energy is calculated as:
  *
- *     E = 0.5 * k * (L - L0)^2
+ *     E = 0.5 * k * (L - L0)²
  *
  * where:
  *   - k is the spring stiffness.
