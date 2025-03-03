@@ -7,7 +7,7 @@
 - **Header-only**: Just include the headers, no builds, no extra setup.
 - **Eigen-powered**: All numerical operations rely on [Eigen](https://eigen.tuxfamily.org/) for efficient linear algebra.
 - **Derivative-checked**: Automatic verification of gradients and Hessians using [TinyAD](https://github.com/patr-schm/TinyAD).
-- ️**Modular**: Use only what you need—small, focused modules for specific simulation tasks.
+- ️**Modular**: Use only what you need. Each header is fully self-contained. You can use any module without depending on the others.
 
 ##  Modules
 
@@ -19,5 +19,6 @@ Currently available modules include:
   - Tetrahedral volume computation.
 
 - **Spring Energy**
-  - Spring Energy, Gradient And Hessian
+
+- **Stable Neo-Hookean Energy**
 
