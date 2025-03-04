@@ -51,3 +51,4 @@ target_include_directories(Watt INTERFACE
 add_subdirectory(Spring)
 add_subdirectory(StableNeoHookean)
 add_subdirectory(DeformationGradient)
+add_subdirectory(KroneckerProduct)

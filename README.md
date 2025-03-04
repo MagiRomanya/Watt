@@ -18,7 +18,10 @@ Currently available modules include:
   - Jacobian of the deformation gradient with respect to nodal positions.
   - Tetrahedral volume computation.
 
+- **Kronecker Product**
+  - Kronecker product implementation for fixed-size matrices in Eigen.
+  - [Perfect Shuffle Matrix or Commutation Matrix](https://en.wikipedia.org/wiki/Commutation_matrix)
+
 - **Spring Energy**
 
 - **Stable Neo-Hookean Energy**
-
