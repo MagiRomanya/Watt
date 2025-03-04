@@ -22,6 +22,8 @@ Currently available modules include:
   - Kronecker product implementation for fixed-size matrices in Eigen.
   - [Perfect Shuffle Matrix or Commutation Matrix](https://en.wikipedia.org/wiki/Commutation_matrix)
 
+- **Rotation-Variant SVD and Polar Decomposition**
+
 - **Spring Energy**
 
 - **Stable Neo-Hookean Energy**
