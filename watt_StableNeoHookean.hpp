@@ -2,6 +2,9 @@
 #define WATT_STABLENEOHOOKEAN_H_
 
 #include <Eigen/Dense>
+#include <Eigen/Eigenvalues>
+
+#include <cmath>
 
 namespace Watt::StableNeoHookean
 {
@@ -112,6 +115,90 @@ Eigen::Matrix<Scalar, 9, 9> computeEnergyHessian(const Eigen::Matrix3<Scalar> &F
 
     return mu * Mat9::Identity() - mu * hessI3 + lambda * (I3 - 1.0) * hessI3 +
            lambda * jacI3.reshaped() * jacI3.reshaped().transpose();
+}
+
+/**
+ * @brief Computes a positive semi-definite (PSD) approximation of the
+ * Hessian of the energy with respect to the deformation gradient.
+ *
+ * @param U Left singular vectors of the deformation gradient F (3x3).
+ * @param sigma Singular values of F (3x1).
+ * @param VT Right singular vectors of F (3x3).
+ * @param mu Shear modulus (first Lamé parameter).
+ * @param lambda Second Lamé parameter.
+ * @return PSD Hessian matrix (9x9).
+ */
+template <typename Scalar>
+Eigen::Matrix<Scalar, 9, 9> computeEnergyHessianPSD(const Eigen::Matrix3<Scalar> &U,
+                                                    const Eigen::Vector3<Scalar> &sigma,
+                                                    const Eigen::Matrix3<Scalar> &VT,
+                                                    Scalar mu,
+                                                    Scalar lambda)
+{
+    using Mat9 = Eigen::Matrix<Scalar, 9, 9>;
+    using Mat3 = Eigen::Matrix3<Scalar>;
+
+    constexpr Scalar oneOverSrt2 = 1.0 / std::sqrt(2.0);
+    const Scalar I2 = (U * sigma.asDiagonal() * VT).squaredNorm();
+    const Scalar I3 = sigma.x() * sigma.y() * sigma.z();
+
+    // Compute Eigenvalues
+    Eigen::Vector<Scalar, 9> eigenvalues;
+
+    Mat3 A;
+    // Diagonal terms
+    for (Eigen::Index i = 0; i < 3; ++i) {
+        A(i, i) = mu + lambda * I3 * I3 / (sigma[i] * sigma[i]);
+    }
+    // Off-diagonal terms
+    A(0, 1) = sigma[2] * (lambda * (2.0 * I3 - 1.0) - mu);
+    A(0, 2) = sigma[1] * (lambda * (2.0 * I3 - 1.0) - mu);
+    A(1, 2) = sigma[0] * (lambda * (2.0 * I3 - 1.0) - mu);
+    A(1, 0) = A(0, 1);
+    A(2, 0) = A(0, 2);
+    A(2, 1) = A(1, 2);
+    Eigen::SelfAdjointEigenSolver<Mat3> solver;
+    solver.compute(A);
+    const Mat3 Q3 = solver.eigenvectors();
+
+    // Difficult eigenvalues
+    eigenvalues.template segment<3>(0) = solver.eigenvalues();
+
+    // Easy eigenvalues
+    const Scalar common = (lambda * (I3 - 1.0) - mu);
+    eigenvalues[3] = mu + sigma.x() * common;
+    eigenvalues[4] = mu + sigma.y() * common;
+    eigenvalues[5] = mu + sigma.z() * common;
+    eigenvalues[6] = mu - sigma.x() * common;
+    eigenvalues[7] = mu - sigma.y() * common;
+    eigenvalues[8] = mu - sigma.z() * common;
+
+    // Clamp eigenvalues to be >0
+    eigenvalues = eigenvalues.cwiseMax(0);
+
+    // Compute Eigenvectors
+    Mat9 Q = Mat9::Zero();
+
+    for (Eigen::Index i = 0; i < 3; ++i) {
+        // Scale i.e. Difficult first 3 eigenvectors
+        {
+            Q.col(i) = (U * Q3.col(i).asDiagonal() * VT).reshaped();
+        }
+
+        // Twist
+        {
+            const Mat3 Mi = skew<Scalar>(Mat3::Identity().col(i));
+            Q.col(i + 3) = oneOverSrt2 * (U * Mi * VT).reshaped();
+        }
+
+        // Flip
+        {
+            const Mat3 Mi = (skew<Scalar>(Mat3::Identity().col(i))).cwiseAbs();
+            Q.col(i + 6) = oneOverSrt2 * (U * Mi * VT).reshaped();
+        }
+    }
+
+    return Q * eigenvalues.asDiagonal() * Q.transpose();
 }
 
 };  // namespace Watt::StableNeoHookean

@@ -1,7 +1,10 @@
 #include <catch2/catch_all.hpp>
 #include <TinyAD/Scalar.hh>
 
+#include <Eigen/SVD>
+
 #include "watt_StableNeoHookean.hpp"
+#include "watt_RotationVariantPolarSVD.hpp"
 
 TEST_CASE("STABLE NEO-HOOKEAN ENERGY DERIVATIVES")
 {
@@ -15,8 +18,7 @@ TEST_CASE("STABLE NEO-HOOKEAN ENERGY DERIVATIVES")
         // NOLINTNEXTLINE
         using namespace Catch::Generators;
         return makeGenerators(
-            take(nTests,
-                 map([](const auto &) { return (1.0 * Eigen::Matrix3<double>::Random()).eval(); }, range(0, nTests))));
+            take(nTests, map([](const auto &) { return (1.0 * Eigen::Matrix3d::Random()).eval(); }, range(0, nTests))));
     });
 
     F += deformation;
@@ -46,5 +48,26 @@ TEST_CASE("STABLE NEO-HOOKEAN ENERGY DERIVATIVES")
     {
         Eigen::Matrix<double, 9, 9> hessianWatt = Watt::StableNeoHookean::computeEnergyHessian(F, mu, lambda);
         REQUIRE_THAT((hessianWatt - energyAD.Hess).norm(), Catch::Matchers::WithinAbs(0, tol));
+    }
+
+    SECTION("Energy Hessian PSD")
+    {
+        // Compute Watt's implementation
+        Eigen::JacobiSVD<Eigen::Matrix3<double>> svdSolver;
+        const auto [U, sigma, V] = Watt::RotationVariantPolarAndSVD::svd_rv(F);
+        Eigen::Matrix<double, 9, 9> hessPSD =
+            Watt::StableNeoHookean::computeEnergyHessianPSD<double>(U, sigma, V.transpose(), mu, lambda);
+
+        // Compute reference (AD + numerical eigensystem)
+        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 9, 9>> solver;
+        solver.compute(energyAD.Hess);
+        Eigen::Vector<double, 9> eigenvalues = solver.eigenvalues();
+        Eigen::Matrix<double, 9, 9> eigenvectors = solver.eigenvectors();
+
+        // Clamp eigenvalues to be >0
+        eigenvalues = eigenvalues.cwiseMax(0);
+        Eigen::Matrix<double, 9, 9> hessPSD_AD = eigenvectors * eigenvalues.asDiagonal() * eigenvectors.transpose();
+
+        REQUIRE_THAT((hessPSD - hessPSD_AD).norm(), Catch::Matchers::WithinAbs(0, tol));
     }
 }
