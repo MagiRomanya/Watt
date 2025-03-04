@@ -14,7 +14,7 @@
 Currently available modules include:
 
 - **Deformation Gradient**
-  - Compute deformation gradients for tetrahedral meshes.
+  - Compute deformation gradients for tetrahedral & triangle meshes.
   - Jacobian of the deformation gradient with respect to nodal positions.
   - Tetrahedral volume computation.
 
